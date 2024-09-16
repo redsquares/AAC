@@ -103,7 +103,7 @@ if not athletes_df.empty:
         # Main container for each athlete
         with st.container():
             # Combine athlete's name, contact, and teams information in one line
-            st.write(f"**{row['name']}** - ({row['contact']}) - {row['teams'].replace(',', ' / ')}")
+            st.write(f"**{row['name']}** - {row['contact']} - {row['teams'].replace(',', ' / ')}")
 
             # Create columns for the buttons, adjusting the width
             button_col1, button_col2, space_col3 = st.columns([2, 2, 8])
