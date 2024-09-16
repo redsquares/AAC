@@ -1,7 +1,3 @@
-scipy
+streamlit
 pandas
-numpy
-scikit-learn
-matplotlib
-seaborn
 sqlite3
