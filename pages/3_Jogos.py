@@ -5,16 +5,12 @@ import os
 
 # Ensure the user is authenticated
 if 'authenticated' not in st.session_state or not st.session_state.authenticated:
-    st.error("Please log in from the Home page.")
+    st.error("Por favor, faça login a partir da página inicial.")
     st.stop()
 
 # Initialize session state variables
 if 'edit_match_id' not in st.session_state:
     st.session_state.edit_match_id = None
-
-# Initialize the team filter state
-if 'selected_teams' not in st.session_state:
-    st.session_state.selected_teams = []
 
 # Database initialization
 def init_db():
@@ -41,7 +37,7 @@ def init_db():
                 ''')
                 conn.commit()
     except sqlite3.Error as e:
-        st.error(f"An error occurred while initializing the database: {e}")
+        st.error(f"Ocorreu um erro ao inicializar a base de dados: {e}")
 
 # Function to fetch all matches from the database
 def fetch_matches():
@@ -49,7 +45,7 @@ def fetch_matches():
         with sqlite3.connect('athletes.db') as conn:
             return pd.read_sql_query("SELECT * FROM matches", conn)
     except sqlite3.Error as e:
-        st.error(f"An error occurred while fetching matches: {e}")
+        st.error(f"Ocorreu um erro ao buscar os jogos: {e}")
         return pd.DataFrame()
 
 # Function to fetch all teams from the database
@@ -58,7 +54,7 @@ def fetch_teams():
         with sqlite3.connect('athletes.db') as conn:
             return pd.read_sql_query("SELECT name FROM teams", conn)['name'].tolist()
     except sqlite3.Error as e:
-        st.error(f"An error occurred while fetching teams: {e}")
+        st.error(f"Ocorreu um erro ao buscar os escalões: {e}")
         return []
 
 # Functions to add, update, and delete matches
@@ -69,9 +65,9 @@ def add_match(name, date, team, google_maps_link):
             c.execute('INSERT INTO matches (name, date, team, google_maps_link) VALUES (?, ?, ?, ?)', 
                       (name, date, team, google_maps_link))
             conn.commit()
-            st.success(f"Match '{name}' added successfully!")
+            st.success(f"Jogo '{name}' adicionado com sucesso!")
     except sqlite3.Error as e:
-        st.error(f"An error occurred while adding a match: {e}")
+        st.error(f"Ocorreu um erro ao adicionar um jogo: {e}")
 
 def update_match(match_id, new_name, new_date, new_team, new_link):
     try:
@@ -81,7 +77,7 @@ def update_match(match_id, new_name, new_date, new_team, new_link):
                       (new_name, new_date, new_team, new_link, match_id))
             conn.commit()
     except sqlite3.Error as e:
-        st.error(f"An error occurred while updating the match: {e}")
+        st.error(f"Ocorreu um erro ao atualizar o jogo: {e}")
 
 def delete_match(match_id):
     try:
@@ -89,9 +85,9 @@ def delete_match(match_id):
             c = conn.cursor()
             c.execute('DELETE FROM matches WHERE id = ?', (match_id,))
             conn.commit()
-            st.success(f"Match deleted successfully!")
+            st.success(f"Jogo apagado com sucesso!")
     except sqlite3.Error as e:
-        st.error(f"An error occurred while deleting the match: {e}")
+        st.error(f"Ocorreu um erro ao apagar o jogo: {e}")
 
 # Initialize the database
 init_db()
@@ -99,41 +95,38 @@ init_db()
 # Display the logo on the top of the page
 st.image("logo_aac.png", width=100)
 
-# Fetch available teams for filtering and adding matches
-team_options = fetch_teams()
-
 # Show the form to add a new match
-st.write("### Add New Match")
+st.write("### Adicionar Jogo")
 with st.form(key='add_match_form'):
-    new_match_name = st.text_input('Match Name')
-    new_match_date = st.date_input('Match Date')
-    new_team = st.selectbox('Select Team', ["Select a team..."] + team_options)
-    new_google_maps_link = st.text_input('Google Maps Link')
+    new_match_name = st.text_input('Local')
+    new_match_date = st.date_input('Data do Jogo')
+    new_team = st.selectbox('Escolher Escalão', ["Escolher um escalão..."] + fetch_teams())
+    new_google_maps_link = st.text_input('Link do Google Maps')
 
-    if st.form_submit_button('Add'):
+    if st.form_submit_button('Confirmar'):
         # Check if the match name and team are provided
-        if new_match_name.strip() and new_team != "Select a team...":
+        if new_match_name.strip() and new_team != "Escolher um escalão...":
             add_match(new_match_name.strip(), new_match_date.strftime('%Y-%m-%d'), new_team, new_google_maps_link.strip())
             st.rerun()
         else:
             if not new_match_name.strip():
-                st.error("Match name is required.")
-            if new_team == "Select a team...":
-                st.error("Please select a valid team.")
+                st.error("O local do jogo é obrigatório.")
+            if new_team == "Escolher um escalão...":
+                st.error("Por favor, selecione um escalão válido.")
 
-# Add filter to select teams (moved after the form)
-st.write("### Filter Matches by Team")
-st.session_state.selected_teams = st.multiselect('Select Teams', team_options, default=st.session_state.selected_teams)
+# Add filter to select teams
+st.write("### Filtrar Jogos por Escalão")
+selected_teams = st.multiselect('Escolher Escalões', fetch_teams())
 
 # Fetch the current list of matches
 matches_df = fetch_matches()
 
 # Apply team filter to the match list if any teams are selected
-if not matches_df.empty and st.session_state.selected_teams:
-    matches_df = matches_df[matches_df['team'].isin(st.session_state.selected_teams)]
+if not matches_df.empty and selected_teams:
+    matches_df = matches_df[matches_df['team'].isin(selected_teams)]
 
 # Display the list of matches
-st.write("### Match List")
+st.write("### Lista de Jogos")
 
 # Display each match's data
 if not matches_df.empty:
@@ -142,26 +135,26 @@ if not matches_df.empty:
             # Combine name, date, team, and link into one line
             match_line = f"**{row['name']}** ({row['team']}) - {pd.to_datetime(row['date']).strftime('%d/%m/%Y')}"
             if row['google_maps_link']:
-                match_line += f" - [Open Map]({row['google_maps_link']})"
+                match_line += f" - [Abrir Google Maps]({row['google_maps_link']})"
             st.markdown(match_line, unsafe_allow_html=True)
 
             # Create columns for Edit and Delete buttons
             button_col1, button_col2 = st.columns([1, 1])
             
             with button_col1:
-                if st.button("Edit", key=f"edit_{row['id']}"):
+                if st.button("Editar", key=f"edit_{row['id']}"):
                     st.session_state.edit_match_id = row['id']
                     st.rerun()
             
             with button_col2:
-                if st.button("Delete", key=f"delete_{row['id']}"):
+                if st.button("Apagar", key=f"delete_{row['id']}"):
                     delete_match(row['id'])
                     st.rerun()
 
             # Add a small divider line for spacing between matches
             st.markdown("---")
 else:
-    st.write("No matches found. Please add matches using the form above.")
+    st.write("Nenhum jogo encontrado. Por favor, adicione jogos usando o formulário acima.")
 
 # Show the edit form if a match ID is set
 if st.session_state.edit_match_id is not None:
@@ -172,13 +165,13 @@ if st.session_state.edit_match_id is not None:
     match_team = match_row['team'].values[0]
     match_link = match_row['google_maps_link'].values[0]
 
-    st.write("### Edit Match")
+    st.write("### Editar Jogo")
     with st.form(key='edit_match_form'):
-        new_name = st.text_input('Edit Name', value=match_name)
-        new_date = st.date_input('Edit Date', value=pd.to_datetime(match_date))
-        new_team = st.selectbox('Edit Team', team_options, index=team_options.index(match_team))
-        new_link = st.text_input('Edit Google Maps Link', value=match_link)
-        if st.form_submit_button('Update'):
+        new_name = st.text_input('Editar Local', value=match_name)
+        new_date = st.date_input('Editar Data', value=pd.to_datetime(match_date))
+        new_team = st.selectbox('Editar Escalão', fetch_teams(), index=fetch_teams().index(match_team))
+        new_link = st.text_input('Editar Link para Google Maps', value=match_link)
+        if st.form_submit_button('Confirmar'):
             update_match(match_id, new_name.strip(), new_date.strftime('%Y-%m-%d'), new_team, new_link.strip())
             st.session_state.edit_match_id = None
             st.rerun()

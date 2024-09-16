@@ -66,11 +66,11 @@ def init_db():
                 
                 conn.commit()
     except sqlite3.Error as e:
-        st.error(f"An error occurred while initializing the database: {e}")
+        st.error(f"Ocorreu um erro ao inicializar a base de dados: {e}")
 
 # Ensure the user is authenticated
 if 'authenticated' not in st.session_state or not st.session_state.authenticated:
-    st.error("Please log in from the Home page.")
+    st.error("Por favor, faça login a partir da página inicial.")
     st.stop()
 
 # Custom CSS for mobile-friendly adjustments
@@ -100,9 +100,9 @@ def add_car(match_id, driver, contact, seats):
                 VALUES (?, ?, ?, ?)
             ''', (match_id, driver, contact, seats))
             conn.commit()
-            st.success(f"Car added successfully!")
+            st.success(f"Carro adicionado com sucesso!")
     except sqlite3.Error as e:
-        st.error(f"An error occurred while adding a car: {e}")
+        st.error(f"Ocorreu um erro ao adicionar o carro: {e}")
 
 # Function to update car information in the database
 def update_car(car_id, driver, contact, seats):
@@ -115,9 +115,9 @@ def update_car(car_id, driver, contact, seats):
                 WHERE id = ?
             ''', (driver, contact, seats, car_id))
             conn.commit()
-            st.success(f"Car updated successfully!")
+            st.success(f"Carro atualizado com sucesso!")
     except sqlite3.Error as e:
-        st.error(f"An error occurred while updating the car: {e}")
+        st.error(f"Ocorreu um erro ao atualizar o carro: {e}")
 
 # Function to delete a car from the database
 def delete_car(car_id):
@@ -129,9 +129,9 @@ def delete_car(car_id):
             # Delete the car
             c.execute('DELETE FROM cars WHERE id = ?', (car_id,))
             conn.commit()
-            st.success(f"Car deleted successfully!")
+            st.success(f"Carro apagado com sucesso!")
     except sqlite3.Error as e:
-        st.error(f"An error occurred while deleting the car: {e}")
+        st.error(f"Ocorreu um erro ao apagar o carro: {e}")
 
 # Function to assign an athlete to a car
 def assign_athlete_to_car(match_id, car_id, athlete_id):
@@ -148,9 +148,9 @@ def assign_athlete_to_car(match_id, car_id, athlete_id):
             # Decrease seats by 1
             c.execute('UPDATE cars SET seats = seats - 1 WHERE id = ?', (car_id,))
             conn.commit()
-            st.success(f"Athlete assigned successfully!")
+            st.success(f"Atleta atribuído com sucesso!")
     except sqlite3.Error as e:
-        st.error(f"An error occurred while assigning the athlete: {e}")
+        st.error(f"Ocorreu um erro ao atribuir o atleta: {e}")
 
 # Function to remove an athlete from a car
 def remove_athlete_from_car(car_id, athlete_id):
@@ -162,9 +162,9 @@ def remove_athlete_from_car(car_id, athlete_id):
             # Increase seats by 1
             c.execute('UPDATE cars SET seats = seats + 1 WHERE id = ?', (car_id,))
             conn.commit()
-            st.success(f"Athlete removed successfully!")
+            st.success(f"Atleta removido com sucesso!")
     except sqlite3.Error as e:
-        st.error(f"An error occurred while removing the athlete: {e}")
+        st.error(f"Ocorreu um erro ao remover o atleta: {e}")
 
 # Function to fetch the next match for a specific team
 def fetch_next_match(team):
@@ -175,7 +175,7 @@ def fetch_next_match(team):
                 conn, params=(team,)
             )
     except sqlite3.Error as e:
-        st.error(f"An error occurred while fetching the next match: {e}")
+        st.error(f"Ocorreu um erro ao buscar o próximo jogo: {e}")
         return pd.DataFrame()
 
 # Function to fetch cars for a specific match
@@ -186,7 +186,7 @@ def fetch_cars_for_match(match_id):
                 "SELECT * FROM cars WHERE match_id = ?", conn, params=(match_id,)
             )
     except sqlite3.Error as e:
-        st.error(f"An error occurred while fetching cars: {e}")
+        st.error(f"Ocorreu um erro ao buscar os carros: {e}")
         return pd.DataFrame()
 
 # Function to fetch assigned athletes for a specific car
@@ -201,7 +201,7 @@ def fetch_assigned_athletes(car_id):
                 ''', conn, params=(car_id,)
             )
     except sqlite3.Error as e:
-        st.error(f"An error occurred while fetching assigned athletes: {e}")
+        st.error(f"Ocorreu um erro ao buscar os atletas atribuídos: {e}")
         return pd.DataFrame()
 
 # Function to fetch available athletes for the match, filtered by team
@@ -217,7 +217,7 @@ def fetch_available_athletes(match_id, team):
                 ''', conn, params=(match_id, f'%{team}%')
             )
     except sqlite3.Error as e:
-        st.error(f"An error occurred while fetching athletes: {e}")
+        st.error(f"Ocorreu um erro ao buscar os atletas: {e}")
         return pd.DataFrame()
 
 # Initialize the database
@@ -232,7 +232,7 @@ def fetch_teams():
         with sqlite3.connect('athletes.db') as conn:
             return pd.read_sql_query("SELECT name FROM teams", conn)['name'].tolist()
     except sqlite3.Error as e:
-        st.error(f"An error occurred while fetching teams: {e}")
+        st.error(f"Ocorreu um erro ao buscar as equipas: {e}")
         return []
 
 # Fetch the list of teams
@@ -243,10 +243,10 @@ if 'edit_car_id' not in st.session_state:
     st.session_state.edit_car_id = None
 
 # Team Selector for Filtering Matches
-selected_team = st.selectbox('Select Team', teams)
+selected_team = st.selectbox('Escolher Escalão', teams)
 
 # Display the next match for the selected team
-st.title(f"Next Match for {selected_team}")
+st.title(f"Próximo jogo dos {selected_team}")
 next_match_df = fetch_next_match(selected_team)
 
 if not next_match_df.empty:
@@ -258,27 +258,27 @@ if not next_match_df.empty:
 
     # Display match information
     st.write(f"### {match_name}")
-    st.write(f"**Date:** {match_date}")
-    st.markdown(f"[Open in Google Maps]({google_maps_link})", unsafe_allow_html=True)
+    st.write(f"**Data:** {match_date}")
+    st.markdown(f"[Abrir no Google Maps]({google_maps_link})", unsafe_allow_html=True)
 
     # Divider above the form
     st.markdown("---")
     
     # Add or edit car form
-    st.write("### Add Car")
+    st.write("### Adicionar Carro")
     with st.form(key='car_form'):
         if st.session_state.edit_car_id is None:
-            driver_name = st.text_input('Driver')
-            contact_info = st.text_input('Contact')
-            seats_available = st.number_input('Available Seats', min_value=1, step=1)
-            submit_label = 'Add Car'
+            driver_name = st.text_input('Condutor')
+            contact_info = st.text_input('Contacto')
+            seats_available = st.number_input('Lugares Disponíveis', min_value=1, step=1)
+            submit_label = 'Adicionar'
         else:
             # Fetch car details for editing
             car_to_edit = fetch_cars_for_match(match_id)[fetch_cars_for_match(match_id)['id'] == st.session_state.edit_car_id]
-            driver_name = st.text_input('Driver', value=car_to_edit['driver'].values[0])
-            contact_info = st.text_input('Contact', value=car_to_edit['contact'].values[0])
-            seats_available = st.number_input('Available Seats', min_value=1, step=1, value=car_to_edit['seats'].values[0])
-            submit_label = 'Update Car'
+            driver_name = st.text_input('Condutor', value=car_to_edit['driver'].values[0])
+            contact_info = st.text_input('Contacto', value=car_to_edit['contact'].values[0])
+            seats_available = st.number_input('Lugares Disponíveis', min_value=1, step=1, value=car_to_edit['seats'].values[0])
+            submit_label = 'Atualizar'
         
         if st.form_submit_button(submit_label):
             if st.session_state.edit_car_id is None:
@@ -292,53 +292,59 @@ if not next_match_df.empty:
     st.markdown("---")
     
     # Fetch and display cars for this match
-    st.write("### Available Cars")
+    st.write("### Carros Disponíveis")
     cars_df = fetch_cars_for_match(match_id)
 
     if not cars_df.empty:
         for index, car in cars_df.iterrows():
             with st.container():
                 # Combine driver and contact information in one line
-                st.write(f"**Driver:** {car['driver']} ({car['contact']})")
-                st.write(f"**Available Seats:** {car['seats']}")
+                st.write(f"**Condutor:** {car['driver']} ({car['contact']})")
+                st.write(f"**Lugares Disponíveis:** {car['seats']}")
 
                 col1, col2 = st.columns([1, 1])
                 with col1:
-                    if st.button("Edit", key=f"edit_car_{car['id']}"):
+                    if st.button("Editar", key=f"edit_car_{car['id']}"):
                         st.session_state.edit_car_id = car['id']
                         st.rerun()
                 with col2:
-                    if st.button("Delete", key=f"delete_car_{car['id']}"):
+                    if st.button("Apagar", key=f"delete_car_{car['id']}"):
                         delete_car(car['id'])
                         st.rerun()
 
                 # Display assigned athletes
                 assigned_athletes_df = fetch_assigned_athletes(car['id'])
                 if not assigned_athletes_df.empty:
-                    st.write(f"**Assigned Athletes for {car['driver']}**")
+                    st.write(f"**Atletas no carro de {car['driver']}**")
                     for athlete_index, athlete in assigned_athletes_df.iterrows():
                         col1, col2 = st.columns([4, 1])
                         with col1:
                             st.write(f"{athlete['name']} ({athlete['contact']})")
                         with col2:
-                            if st.button("Remove", key=f"remove_athlete_{athlete['id']}_{car['id']}"):
+                            if st.button("Remover", key=f"remove_athlete_{athlete['id']}_{car['id']}"):
                                 remove_athlete_from_car(car['id'], athlete['id'])
                                 st.rerun()
 
                 st.markdown("---")
 
     # Athlete assignment form
-    st.write("### Assign Athlete to a Car")
+    st.write("### Escolher Carro para o Atleta")
     available_athletes_df = fetch_available_athletes(match_id, selected_team)  # Pass the selected team for filtering
+
+    # Check if there are available athletes and cars
     if not available_athletes_df.empty and not cars_df.empty:
         # Filter out cars with 0 seats
         available_cars_df = cars_df[cars_df['seats'] > 0]
         if not available_cars_df.empty:
             with st.form(key='assign_athlete_form'):
-                selected_athlete_id = st.selectbox('Select Athlete', available_athletes_df['id'], format_func=lambda x: available_athletes_df[available_athletes_df['id'] == x]['name'].values[0])
-                selected_car_id = st.selectbox('Select Car', available_cars_df['id'], format_func=lambda x: available_cars_df[available_cars_df['id'] == x]['driver'].values[0])
-                if st.form_submit_button('Assign'):
+                selected_athlete_id = st.selectbox('Escolher Atleta', available_athletes_df['id'], format_func=lambda x: available_athletes_df[available_athletes_df['id'] == x]['name'].values[0])
+                selected_car_id = st.selectbox('Escolher Carro', available_cars_df['id'], format_func=lambda x: available_cars_df[available_cars_df['id'] == x]['driver'].values[0])
+                if st.form_submit_button('Confirmar'):
                     assign_athlete_to_car(match_id, selected_car_id, selected_athlete_id)
                     st.rerun()
+
+    # Show message if there are no more athletes to assign
+    if available_athletes_df.empty:
+        st.write("Não existem mais atletas para o escalão deste jogo.")
 else:
-    st.write(f"No upcoming matches found for {selected_team}.")
+    st.write(f"Não foram encontrados próximos jogos dos {selected_team}.")

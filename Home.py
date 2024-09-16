@@ -10,22 +10,22 @@ def authenticate():
 
     # If the user is already authenticated, switch to "1_Next_Match"
     if st.session_state.authenticated:
-        st.switch_page("pages/1_Next_Match.py")  # Switch to the "Next Match" page
+        st.switch_page("pages/1_Próximos_Jogos.py")  # Updated to use non-accented characters
         st.stop()
 
     # Authentication form
     with st.form(key='login_form'):
-        password = st.text_input('Enter Password:', type='password')
+        password = st.text_input('Insira Password:', type='password')
         login_button = st.form_submit_button('Login')
         
         if login_button:  # Trigger when form is submitted
             if password == 'aac':
                 st.session_state.authenticated = True
-                st.success('Successfully logged in!')
+                st.success('Password Correta!')
                 # Switch to "1_Next_Match"
-                st.switch_page("pages/1_Next_Match.py")
+                st.switch_page("pages/1_Próximos_Jogos.py")  # Updated to use non-accented characters
             else:
-                st.error('Incorrect password.')
+                st.error('Password Incorreta.')
 
 # Call the authentication function when the script is run
 authenticate()
