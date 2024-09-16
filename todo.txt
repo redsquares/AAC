@@ -1,0 +1,15 @@
+
+
+Adicionar gestor de escalões (criar escalões)
+
+Meter add athlete em cima e lista por baixo
+Meter filtro por escalão
+
+
+Fazer o mesmo para os matches
+Meter add athlete em cima e lista por baixo
+Meter filtro por escalão
+
+
+Past matches (para manter a lista das boleias)
+Athlete lista >  Assign Form > Add Car

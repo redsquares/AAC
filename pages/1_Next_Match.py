@@ -9,6 +9,7 @@ def init_db():
         if not os.path.exists('athletes.db'):
             with sqlite3.connect('athletes.db') as conn:
                 c = conn.cursor()
+                
                 # Create the matches table if it doesn't exist
                 c.execute('''
                     CREATE TABLE IF NOT EXISTS matches (
@@ -37,7 +38,8 @@ def init_db():
                     CREATE TABLE IF NOT EXISTS athletes (
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
                         name TEXT,
-                        contact TEXT
+                        contact TEXT,
+                        teams TEXT
                     )
                 ''')
 
@@ -53,6 +55,16 @@ def init_db():
                         FOREIGN KEY(athlete_id) REFERENCES athletes(id)
                     )
                 ''')
+
+                # Create the teams table if it doesn't exist
+                c.execute('''
+                    CREATE TABLE IF NOT EXISTS teams (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        name TEXT UNIQUE
+                    )
+                ''')
+                
+                
                 conn.commit()
     except sqlite3.Error as e:
         st.error(f"An error occurred while initializing the database: {e}")
@@ -215,8 +227,17 @@ init_db()
 # Display the logo on the top of the page
 st.image("logo_aac.png", width=100)
 
-# Teams
-teams = ['Minis', 'Sub-14', 'Sub-16']
+# Fetch available teams for the selectbox
+def fetch_teams():
+    try:
+        with sqlite3.connect('athletes.db') as conn:
+            return pd.read_sql_query("SELECT name FROM teams", conn)['name'].tolist()
+    except sqlite3.Error as e:
+        st.error(f"An error occurred while fetching teams: {e}")
+        return []
+
+# Fetch the list of teams
+teams = fetch_teams()
 
 # State to hold the currently edited car ID
 if 'edit_car_id' not in st.session_state:

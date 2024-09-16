@@ -1,74 +1,15 @@
 import streamlit as st
 import sqlite3
 import pandas as pd
-import os
 
 # Ensure the user is authenticated
 if 'authenticated' not in st.session_state or not st.session_state.authenticated:
     st.error("Please log in from the Home page.")
-    # Redirect to Home if not authenticated
-    st.markdown("""
-        <script>
-            window.location.href = "/";
-        </script>
-        """, unsafe_allow_html=True)
     st.stop()
 
-
-# The rest of your existing code for the "Next Match" page
-
-# Database initialization
-def init_db():
-    try:
-        if not os.path.exists('athletes.db'):
-            st.write("Creating the database...")
-
-        with sqlite3.connect('athletes.db') as conn:
-            c = conn.cursor()
-            # Create the athletes table with 'contact' column if it doesn't exist
-            c.execute('''
-                CREATE TABLE IF NOT EXISTS athletes (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    name TEXT,
-                    contact TEXT
-                )
-            ''')
-            # Check if 'contact' column exists and add it if it doesn't
-            c.execute("PRAGMA table_info(athletes)")
-            columns = [column[1] for column in c.fetchall()]
-            if 'contact' not in columns:
-                c.execute('ALTER TABLE athletes ADD COLUMN contact TEXT')
-            
-            conn.commit()
-            # st.write("Database and table initialized.")
-    except sqlite3.Error as e:
-        st.error(f"An error occurred while initializing the database: {e}")
-
-# Custom CSS styles
-st.markdown(
-    """
-    <style>
-    /* Change the color of titles */
-    .stMarkdown h1, .stMarkdown h2, .stMarkdown h3 {
-        color: green;
-    }
-
-    /* Change table header row color */
-    .stDataFrame table thead th {
-        background-color: #17a2b8; /* greenish-blue color */
-        color: purple;
-    }
-
-    /* Change form titles */
-    .stTextInput > label, .stNumberInput > label, .stSelectbox > label {
-        color: grey;
-    }
-
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
-
+# Initialize session state variables
+if 'edit_id' not in st.session_state:
+    st.session_state.edit_id = None
 
 # Function to fetch all athletes from the database
 def fetch_athletes():
@@ -79,21 +20,30 @@ def fetch_athletes():
         st.error(f"An error occurred while fetching athletes: {e}")
         return pd.DataFrame()  # Return an empty DataFrame if there's an error
 
+# Function to fetch available teams for the multiselect
+def fetch_teams():
+    try:
+        with sqlite3.connect('athletes.db') as conn:
+            return pd.read_sql_query("SELECT name FROM teams", conn)['name'].tolist()
+    except sqlite3.Error as e:
+        st.error(f"An error occurred while fetching teams: {e}")
+        return []
+
 # Functions to add, update, and delete athletes
-def add_athlete(name, contact):
+def add_athlete(name, contact, teams):
     try:
         with sqlite3.connect('athletes.db') as conn:
             c = conn.cursor()
-            c.execute('INSERT INTO athletes (name, contact) VALUES (?, ?)', (name, contact))
+            c.execute('INSERT INTO athletes (name, contact, teams) VALUES (?, ?, ?)', (name, contact, teams))
             conn.commit()
     except sqlite3.Error as e:
         st.error(f"An error occurred while adding an athlete: {e}")
 
-def update_athlete(athlete_id, new_name, new_contact):
+def update_athlete(athlete_id, new_name, new_contact, new_teams):
     try:
         with sqlite3.connect('athletes.db') as conn:
             c = conn.cursor()
-            c.execute('UPDATE athletes SET name = ?, contact = ? WHERE id = ?', (new_name, new_contact, athlete_id))
+            c.execute('UPDATE athletes SET name = ?, contact = ?, teams = ? WHERE id = ?', (new_name, new_contact, new_teams, athlete_id))
             conn.commit()
     except sqlite3.Error as e:
         st.error(f"An error occurred while updating the athlete: {e}")
@@ -107,63 +57,74 @@ def delete_athlete(athlete_id):
     except sqlite3.Error as e:
         st.error(f"An error occurred while deleting the athlete: {e}")
 
-# Initialize the database
-init_db()
-
 # Display the logo on the top of the page
 st.image("logo_aac.png", width=100)
 
-# State to hold the currently edited athlete ID
-if 'edit_id' not in st.session_state:
-    st.session_state.edit_id = None
+# Add filter to select teams
+st.write("### Filter Athletes by Team")
+team_options = fetch_teams()  # Fetch team options from the database
+selected_teams = st.multiselect('Select Teams', team_options)  # Default to showing all teams
 
-# Fetch the current list of athletes
-athletes_df = fetch_athletes()
-
-# Display the list of athletes in a tabular format
-st.write("### Athlete List")
-
-# # Add headers for the columns
-# col1, col2, col3, col4 = st.columns([3, 2, 2, 2])
-# col1.write("**Name**")
-# col2.write("**Contact**")
-
-# Display each athlete's data in the columns
-for index, row in athletes_df.iterrows():
-    # Main container for each athlete
-    with st.container():
-        # Combine athlete's name and contact information in one line
-        st.write(f"**{row['name']}** ({row['contact']})")
-
-        # Create columns for the buttons, adjusting the width
-        button_col1, button_col2, space_col3 = st.columns([2,2,8])
-        
-        with button_col1:
-            if st.button("Edit", key=f"edit_{row['id']}"):
-                st.session_state.edit_id = row['id']
-                st.rerun()
-        
-        with button_col2:
-            if st.button("Delete", key=f"delete_{row['id']}"):
-                delete_athlete(row['id'])
-                st.success(f"Athlete '{row['name']}' deleted successfully!")
-                st.rerun()        
-        with space_col3:
-            pass
-
-
-st.markdown("---")
-
-# Show the form to add a new athlete
+# Show the form to add a new athlete at the top
 st.write("### Add New Athlete")
 with st.form(key='add_athlete_form'):
     new_athlete_name = st.text_input('Name')
     new_athlete_contact = st.text_input('Contact')
+    new_athlete_teams = st.multiselect('Teams', team_options)
     if st.form_submit_button('Add'):
-        if new_athlete_name.strip() and new_athlete_contact.strip():
-            add_athlete(new_athlete_name.strip(), new_athlete_contact.strip())
+        if new_athlete_name.strip() and new_athlete_contact.strip() and new_athlete_teams:
+            teams_str = ",".join(new_athlete_teams)  # Store teams as a comma-separated string
+            add_athlete(new_athlete_name.strip(), new_athlete_contact.strip(), teams_str)
             st.success(f"Athlete '{new_athlete_name}' added successfully!")
             st.rerun()
+
+# Fetch the current list of athletes
+athletes_df = fetch_athletes()
+
+# Apply team filter to the athlete list if any teams are selected
+if not athletes_df.empty:
+    if selected_teams:
+        # Convert selected teams to set for filtering
+        selected_teams_set = set(selected_teams)
+        
+        # Function to filter athletes by selected teams
+        def filter_by_teams(teams_str):
+            athlete_teams_set = set(teams_str.split(','))  # Convert athlete's teams string to set
+            return not selected_teams_set.isdisjoint(athlete_teams_set)  # Check for common elements
+
+        athletes_df = athletes_df[athletes_df['teams'].apply(filter_by_teams)]
+
+# Display the list of athletes in a tabular format
+st.write("### Athlete List")
+
+# Display each athlete's data in the columns
+if not athletes_df.empty:
+    for index, row in athletes_df.iterrows():
+        # Main container for each athlete
+        with st.container():
+            # Combine athlete's name, contact, and teams information in one line
+            st.write(f"**{row['name']}** - ({row['contact']}) - {row['teams'].replace(',', ' / ')}")
+
+            # Create columns for the buttons, adjusting the width
+            button_col1, button_col2, space_col3 = st.columns([2, 2, 8])
+            
+            with button_col1:
+                if st.button("Edit", key=f"edit_{row['id']}"):
+                    st.session_state.edit_id = row['id']
+                    st.rerun()
+            
+            with button_col2:
+                if st.button("Delete", key=f"delete_{row['id']}"):
+                    delete_athlete(row['id'])
+                    st.success(f"Athlete '{row['name']}' deleted successfully!")
+                    st.rerun()
+
+            with space_col3:
+                pass
+else:
+    st.write("No athletes found. Please add athletes using the form above.")
+
+st.markdown("---")
 
 # Show the edit form if an athlete ID is set
 if st.session_state.edit_id is not None:
@@ -171,13 +132,16 @@ if st.session_state.edit_id is not None:
     athlete_row = athletes_df[athletes_df['id'] == athlete_id]
     athlete_name = athlete_row['name'].values[0]
     athlete_contact = athlete_row['contact'].values[0]
+    athlete_teams = athlete_row['teams'].values[0].split(',')  # Convert teams string back to list
 
     st.write("### Edit Athlete")
     with st.form(key='edit_form'):
         new_name = st.text_input('Edit Name', value=athlete_name)
         new_contact = st.text_input('Edit Contact', value=athlete_contact)
+        new_teams = st.multiselect('Edit Teams', team_options)
         if st.form_submit_button('Update'):
-            update_athlete(athlete_id, new_name.strip(), new_contact.strip())
+            teams_str = ",".join(new_teams)
+            update_athlete(athlete_id, new_name.strip(), new_contact.strip(), teams_str)
             st.session_state.edit_id = None
             st.success(f"Athlete '{new_name}' updated successfully!")
             st.rerun()
