@@ -12,6 +12,10 @@ if 'authenticated' not in st.session_state or not st.session_state.authenticated
 if 'edit_match_id' not in st.session_state:
     st.session_state.edit_match_id = None
 
+# Initialize the team filter state
+if 'selected_teams' not in st.session_state:
+    st.session_state.selected_teams = []
+
 # Database initialization
 def init_db():
     try:
@@ -98,10 +102,6 @@ st.image("logo_aac.png", width=100)
 # Fetch available teams for filtering and adding matches
 team_options = fetch_teams()
 
-# Add filter to select teams
-st.write("### Filter Matches by Team")
-selected_teams = st.multiselect('Select Teams', team_options)  # Default to show all if nothing is selected
-
 # Show the form to add a new match
 st.write("### Add New Match")
 with st.form(key='add_match_form'):
@@ -121,12 +121,16 @@ with st.form(key='add_match_form'):
             if new_team == "Select a team...":
                 st.error("Please select a valid team.")
 
+# Add filter to select teams (moved after the form)
+st.write("### Filter Matches by Team")
+st.session_state.selected_teams = st.multiselect('Select Teams', team_options, default=st.session_state.selected_teams)
+
 # Fetch the current list of matches
 matches_df = fetch_matches()
 
 # Apply team filter to the match list if any teams are selected
-if not matches_df.empty and selected_teams:
-    matches_df = matches_df[matches_df['team'].isin(selected_teams)]
+if not matches_df.empty and st.session_state.selected_teams:
+    matches_df = matches_df[matches_df['team'].isin(st.session_state.selected_teams)]
 
 # Display the list of matches
 st.write("### Match List")

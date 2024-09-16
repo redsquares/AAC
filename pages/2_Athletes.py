@@ -11,6 +11,10 @@ if 'authenticated' not in st.session_state or not st.session_state.authenticated
 if 'edit_id' not in st.session_state:
     st.session_state.edit_id = None
 
+# Initialize team filter state
+if 'selected_teams' not in st.session_state:
+    st.session_state.selected_teams = []
+
 # Function to fetch all athletes from the database
 def fetch_athletes():
     try:
@@ -60,16 +64,12 @@ def delete_athlete(athlete_id):
 # Display the logo on the top of the page
 st.image("logo_aac.png", width=100)
 
-# Add filter to select teams
-st.write("### Filter Athletes by Team")
-team_options = fetch_teams()  # Fetch team options from the database
-selected_teams = st.multiselect('Select Teams', team_options)  # Default to showing all teams
-
 # Show the form to add a new athlete at the top
 st.write("### Add New Athlete")
 with st.form(key='add_athlete_form'):
     new_athlete_name = st.text_input('Name')
     new_athlete_contact = st.text_input('Contact')
+    team_options = fetch_teams()  # Fetch team options from the database
     new_athlete_teams = st.multiselect('Teams', team_options)
     if st.form_submit_button('Add'):
         if new_athlete_name.strip() and new_athlete_contact.strip() and new_athlete_teams:
@@ -78,14 +78,18 @@ with st.form(key='add_athlete_form'):
             st.success(f"Athlete '{new_athlete_name}' added successfully!")
             st.rerun()
 
+# Add filter to select teams (move this section after the form)
+st.write("### Filter Athletes by Team")
+st.session_state.selected_teams = st.multiselect('Select Teams', team_options, default=st.session_state.selected_teams)
+
 # Fetch the current list of athletes
 athletes_df = fetch_athletes()
 
 # Apply team filter to the athlete list if any teams are selected
 if not athletes_df.empty:
-    if selected_teams:
+    if st.session_state.selected_teams:
         # Convert selected teams to set for filtering
-        selected_teams_set = set(selected_teams)
+        selected_teams_set = set(st.session_state.selected_teams)
         
         # Function to filter athletes by selected teams
         def filter_by_teams(teams_str):
@@ -138,7 +142,7 @@ if st.session_state.edit_id is not None:
     with st.form(key='edit_form'):
         new_name = st.text_input('Edit Name', value=athlete_name)
         new_contact = st.text_input('Edit Contact', value=athlete_contact)
-        new_teams = st.multiselect('Edit Teams', team_options)
+        new_teams = st.multiselect('Edit Teams', team_options, default=athlete_teams)
         if st.form_submit_button('Update'):
             teams_str = ",".join(new_teams)
             update_athlete(athlete_id, new_name.strip(), new_contact.strip(), teams_str)

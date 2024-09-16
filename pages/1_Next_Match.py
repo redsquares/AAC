@@ -64,7 +64,6 @@ def init_db():
                     )
                 ''')
                 
-                
                 conn.commit()
     except sqlite3.Error as e:
         st.error(f"An error occurred while initializing the database: {e}")
@@ -205,8 +204,8 @@ def fetch_assigned_athletes(car_id):
         st.error(f"An error occurred while fetching assigned athletes: {e}")
         return pd.DataFrame()
 
-# Function to fetch available athletes for the match
-def fetch_available_athletes(match_id):
+# Function to fetch available athletes for the match, filtered by team
+def fetch_available_athletes(match_id, team):
     try:
         with sqlite3.connect('athletes.db') as conn:
             return pd.read_sql_query(
@@ -214,8 +213,8 @@ def fetch_available_athletes(match_id):
                 SELECT * FROM athletes
                 WHERE id NOT IN (
                     SELECT athlete_id FROM assignments WHERE match_id = ?
-                )
-                ''', conn, params=(match_id,)
+                ) AND teams LIKE ?
+                ''', conn, params=(match_id, f'%{team}%')
             )
     except sqlite3.Error as e:
         st.error(f"An error occurred while fetching athletes: {e}")
@@ -330,7 +329,7 @@ if not next_match_df.empty:
 
     # Athlete assignment form
     st.write("### Assign Athlete to a Car")
-    available_athletes_df = fetch_available_athletes(match_id)
+    available_athletes_df = fetch_available_athletes(match_id, selected_team)  # Pass the selected team for filtering
     if not available_athletes_df.empty and not cars_df.empty:
         # Filter out cars with 0 seats
         available_cars_df = cars_df[cars_df['seats'] > 0]
