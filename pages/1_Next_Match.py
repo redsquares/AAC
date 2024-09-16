@@ -15,7 +15,8 @@ def init_db():
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
                         name TEXT,
                         date TEXT,
-                        google_maps_link TEXT
+                        google_maps_link TEXT,
+                        team TEXT
                     )
                 ''')
 
@@ -59,12 +60,6 @@ def init_db():
 # Ensure the user is authenticated
 if 'authenticated' not in st.session_state or not st.session_state.authenticated:
     st.error("Please log in from the Home page.")
-    # Redirect to Home if not authenticated
-    st.markdown("""
-        <script>
-            window.location.href = "/";
-        </script>
-        """, unsafe_allow_html=True)
     st.stop()
 
 # Custom CSS for mobile-friendly adjustments
@@ -75,18 +70,10 @@ st.markdown(
     .stMarkdown h1, .stMarkdown h2, .stMarkdown h3 {
         color: green;
     }
-
-    /* Change table header row color */
-    .stDataFrame table thead th {
-        background-color: #17a2b8; /* greenish-blue color */
-        color: purple;
-    }
-
     /* Change form titles */
     .stTextInput > label, .stNumberInput > label, .stSelectbox > label {
         color: grey;
     }
-
     </style>
     """,
     unsafe_allow_html=True,
@@ -105,11 +92,6 @@ def add_car(match_id, driver, contact, seats):
             st.success(f"Car added successfully!")
     except sqlite3.Error as e:
         st.error(f"An error occurred while adding a car: {e}")
-
-
-# Display the logo on the top of the page
-st.image("logo_aac.png", width=100)
-
 
 # Function to update car information in the database
 def update_car(car_id, driver, contact, seats):
@@ -173,12 +155,13 @@ def remove_athlete_from_car(car_id, athlete_id):
     except sqlite3.Error as e:
         st.error(f"An error occurred while removing the athlete: {e}")
 
-# Function to fetch the next match (nearest date in the future)
-def fetch_next_match():
+# Function to fetch the next match for a specific team
+def fetch_next_match(team):
     try:
         with sqlite3.connect('athletes.db') as conn:
             return pd.read_sql_query(
-                "SELECT * FROM matches WHERE date >= DATE('now') ORDER BY date LIMIT 1", conn
+                "SELECT * FROM matches WHERE team = ? AND date >= DATE('now') ORDER BY date LIMIT 1", 
+                conn, params=(team,)
             )
     except sqlite3.Error as e:
         st.error(f"An error occurred while fetching the next match: {e}")
@@ -229,13 +212,22 @@ def fetch_available_athletes(match_id):
 # Initialize the database
 init_db()
 
+# Display the logo on the top of the page
+st.image("logo_aac.png", width=100)
+
+# Teams
+teams = ['Minis', 'Sub-14', 'Sub-16']
+
 # State to hold the currently edited car ID
 if 'edit_car_id' not in st.session_state:
     st.session_state.edit_car_id = None
 
-# Display the next match
-st.title("Next Match")
-next_match_df = fetch_next_match()
+# Team Selector for Filtering Matches
+selected_team = st.selectbox('Select Team', teams)
+
+# Display the next match for the selected team
+st.title(f"Next Match for {selected_team}")
+next_match_df = fetch_next_match(selected_team)
 
 if not next_match_df.empty:
     # Extract match information
@@ -329,4 +321,4 @@ if not next_match_df.empty:
                     assign_athlete_to_car(match_id, selected_car_id, selected_athlete_id)
                     st.rerun()
 else:
-    st.write("No upcoming matches found.")
+    st.write(f"No upcoming matches found for {selected_team}.")
