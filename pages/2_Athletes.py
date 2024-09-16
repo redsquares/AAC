@@ -47,7 +47,7 @@ st.markdown(
 
     /* Change form titles */
     .stTextInput > label, .stNumberInput > label, .stSelectbox > label {
-        color: white;
+        color: grey;
     }
 
     </style>
@@ -130,6 +130,8 @@ for index, row in athletes_df.iterrows():
             delete_athlete(row['id'])
             st.success(f"Athlete '{row['name']}' deleted successfully!")
             st.rerun()
+
+st.markdown("---")
 
 # Show the form to add a new athlete
 st.write("### Add New Athlete")

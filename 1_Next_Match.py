@@ -56,7 +56,32 @@ def init_db():
     except sqlite3.Error as e:
         st.error(f"An error occurred while initializing the database: {e}")
 
-# Custom CSS styles
+# Authentication function
+# Authentication function
+def authenticate():
+
+    # Display the logo on the top of the page
+    st.image("logo_aac.png", width=100)
+
+    if 'authenticated' not in st.session_state:
+        st.session_state.authenticated = False
+
+    if not st.session_state.authenticated:
+        with st.form(key='login_form'):
+            password = st.text_input('Enter Password:', type='password')
+            login_button = st.form_submit_button('Login')
+            
+            if login_button:  # Trigger when form is submitted
+                if password == 'aac':
+                    st.session_state.authenticated = True
+                    st.success('Successfully logged in!')
+                    st.rerun()
+                else:
+                    st.error('Incorrect password.')
+
+    return st.session_state.authenticated
+
+# Custom CSS for mobile-friendly adjustments
 st.markdown(
     """
     <style>
@@ -73,7 +98,7 @@ st.markdown(
 
     /* Change form titles */
     .stTextInput > label, .stNumberInput > label, .stSelectbox > label {
-        color: white;
+        color: grey;
     }
 
     </style>
@@ -213,8 +238,10 @@ def fetch_available_athletes(match_id):
 # Initialize the database
 init_db()
 
-# Display the logo on the top of the page
-st.image("logo_aac.png", width=100)
+# Authentication
+if not authenticate():
+    st.stop()
+
 
 # State to hold the currently edited car ID
 if 'edit_car_id' not in st.session_state:
@@ -228,7 +255,7 @@ if not next_match_df.empty:
     # Extract match information
     match_id = next_match_df['id'].values[0]
     match_name = next_match_df['name'].values[0]
-    match_date = pd.to_datetime(next_match_df['date'].values[0]).strftime('%d/%m/%Y')
+    match_date = pd.to_datetime(next_match_df['date'].iloc[0]).strftime('%d/%m/%Y')
     google_maps_link = next_match_df['google_maps_link'].values[0]
 
     # Display match information
@@ -257,10 +284,8 @@ if not next_match_df.empty:
         
         if st.form_submit_button(submit_label):
             if st.session_state.edit_car_id is None:
-                # Add a new car
                 add_car(match_id, driver_name.strip(), contact_info.strip(), seats_available)
             else:
-                # Update the existing car
                 update_car(st.session_state.edit_car_id, driver_name.strip(), contact_info.strip(), seats_available)
                 st.session_state.edit_car_id = None
             st.rerun()
@@ -271,64 +296,51 @@ if not next_match_df.empty:
     # Fetch and display cars for this match
     st.write("### Available Cars")
     cars_df = fetch_cars_for_match(match_id)
-    
+
     if not cars_df.empty:
-        # Add headers for the car columns
-        col1, col2, col3, col4, col5, col6 = st.columns([3, 2, 2, 2, 2, 2])
-        col1.write("**Driver**")
-        col2.write("**Contact**")
-        col3.write("**Available Seats**")
-
-        # Display each car's data in the columns
         for index, car in cars_df.iterrows():
-            col1, col2, col3, col4, col5, col6 = st.columns([3, 2, 2, 2, 2, 2])
-            with col1:
-                st.write(car['driver'])
-            with col2:
-                st.write(car['contact'])
-            with col3:
-                if car['seats'] <= 0:
-                    st.error("No seats available")
-                else:
-                    st.write(car['seats'])
+            with st.container():
+                # Combine driver and contact information in one line
+                st.write(f"**Driver:** {car['driver']} ({car['contact']})")
+                st.write(f"**Available Seats:** {car['seats']}")
 
-            # Adjust button styling and text size to prevent line breaks
-            with col4:
-                if st.button("Edit", key=f"edit_car_{car['id']}"):
-                    st.session_state.edit_car_id = car['id']
-                    st.rerun()
-            with col5:
-                if st.button("Delete", key=f"delete_car_{car['id']}"):
-                    delete_car(car['id'])
-                    st.rerun()
+                col1, col2 = st.columns([1, 1])
+                with col1:
+                    if st.button("Edit", key=f"edit_car_{car['id']}"):
+                        st.session_state.edit_car_id = car['id']
+                        st.rerun()
+                with col2:
+                    if st.button("Delete", key=f"delete_car_{car['id']}"):
+                        delete_car(car['id'])
+                        st.rerun()
 
-            # Display assigned athletes
-            assigned_athletes_df = fetch_assigned_athletes(car['id'])
-            if not assigned_athletes_df.empty:
-                st.write(f"**Assigned Athletes for {car['driver']}**")
-                for athlete_index, athlete in assigned_athletes_df.iterrows():
-                    col_a1, col_a2, col_a3 = st.columns([3, 2, 2])
-                    with col_a1:
-                        st.write(athlete['name'])
-                    with col_a2:
-                        st.write(athlete['contact'])
-                    with col_a3:
-                        if st.button("Remove", key=f"remove_athlete_{athlete['id']}_{car['id']}"):
-                            remove_athlete_from_car(car['id'], athlete['id'])
-                            st.rerun()
+                # Display assigned athletes
+                assigned_athletes_df = fetch_assigned_athletes(car['id'])
+                if not assigned_athletes_df.empty:
+                    st.write(f"**Assigned Athletes for {car['driver']}**")
+                    for athlete_index, athlete in assigned_athletes_df.iterrows():
+                        col1, col2 = st.columns([4, 1])
+                        with col1:
+                            st.write(f"{athlete['name']} ({athlete['contact']})")
+                        with col2:
+                            if st.button("Remove", key=f"remove_athlete_{athlete['id']}_{car['id']}"):
+                                remove_athlete_from_car(car['id'], athlete['id'])
+                                st.rerun()
 
-    # Divider above athlete assignment form
-    st.markdown("---")
+                st.markdown("---")
 
     # Athlete assignment form
     st.write("### Assign Athlete to a Car")
     available_athletes_df = fetch_available_athletes(match_id)
     if not available_athletes_df.empty and not cars_df.empty:
-        with st.form(key='assign_athlete_form'):
-            selected_athlete_id = st.selectbox('Select Athlete', available_athletes_df['id'], format_func=lambda x: available_athletes_df[available_athletes_df['id'] == x]['name'].values[0])
-            selected_car_id = st.selectbox('Select Car', cars_df['id'], format_func=lambda x: cars_df[cars_df['id'] == x]['driver'].values[0])
-            if st.form_submit_button('Assign'):
-                assign_athlete_to_car(match_id, selected_car_id, selected_athlete_id)
-                st.rerun()
+        # Filter out cars with 0 seats
+        available_cars_df = cars_df[cars_df['seats'] > 0]
+        if not available_cars_df.empty:
+            with st.form(key='assign_athlete_form'):
+                selected_athlete_id = st.selectbox('Select Athlete', available_athletes_df['id'], format_func=lambda x: available_athletes_df[available_athletes_df['id'] == x]['name'].values[0])
+                selected_car_id = st.selectbox('Select Car', available_cars_df['id'], format_func=lambda x: available_cars_df[available_cars_df['id'] == x]['driver'].values[0])
+                if st.form_submit_button('Assign'):
+                    assign_athlete_to_car(match_id, selected_car_id, selected_athlete_id)
+                    st.rerun()
 else:
     st.write("No upcoming matches found.")

@@ -42,7 +42,7 @@ st.markdown(
 
     /* Change form titles */
     .stTextInput > label, .stNumberInput > label, .stSelectbox > label {
-        color: white;
+        color: grey;
     }
 
     </style>
@@ -130,6 +130,8 @@ for index, row in matches_df.iterrows():
         if st.button("Delete", key=f"delete_{row['id']}"):
             delete_match(row['id'])
             st.rerun()
+
+st.markdown("---")
 
 # Show the form to add a new match
 st.write("### Add New Match")
