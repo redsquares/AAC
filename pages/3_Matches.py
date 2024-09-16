@@ -3,6 +3,20 @@ import sqlite3
 import pandas as pd
 import os
 
+# Ensure the user is authenticated
+if 'authenticated' not in st.session_state or not st.session_state.authenticated:
+    st.error("Please log in from the Home page.")
+    # Redirect to Home if not authenticated
+    st.markdown("""
+        <script>
+            window.location.href = "/";
+        </script>
+        """, unsafe_allow_html=True)
+    st.stop()
+
+
+# The rest of your existing code for the "Next Match" page
+
 # Database initialization
 def init_db():
     try:
@@ -107,31 +121,35 @@ matches_df = fetch_matches()
 st.write("### Match List")
 
 # Add headers for the columns
-col1, col2, col3, col4, col5 = st.columns([2, 2, 2, 1, 1])
-col1.write("**Name**")
-col2.write("**Date**")
-col3.write("**Google Maps**")
+# col1, col2, col3, col4, col5 = st.columns([2, 2, 2, 1, 1])
+# col1.write("**Name**")
+# col2.write("**Date**")
+# col3.write("**Google Maps**")
 
-# Display each match's data in the columns
+# Display each match's data
 for index, row in matches_df.iterrows():
-    col1, col2, col3, col4, col5 = st.columns([2, 2, 2, 1, 1])
-    with col1:
-        st.write(row['name'])
-    with col2:
-        st.write(row['date'])
-    with col3:
+    with st.container():
+        # Combine name, date, and link into one line
+        match_line = f"**{row['name']}** - {pd.to_datetime(row['date']).strftime('%d/%m/%Y')}"
         if row['google_maps_link']:
-            st.markdown(f"[Open Map]({row['google_maps_link']})", unsafe_allow_html=True)
-    with col4:
-        if st.button("Edit", key=f"edit_{row['id']}"):
-            st.session_state.edit_match_id = row['id']
-            st.rerun()
-    with col5:
-        if st.button("Delete", key=f"delete_{row['id']}"):
-            delete_match(row['id'])
-            st.rerun()
+            match_line += f" - [Open Map]({row['google_maps_link']})"
+        st.markdown(match_line, unsafe_allow_html=True)
 
-st.markdown("---")
+        # Create columns for Edit and Delete buttons
+        button_col1, button_col2 = st.columns([1, 1])
+        
+        with button_col1:
+            if st.button("Edit", key=f"edit_{row['id']}"):
+                st.session_state.edit_match_id = row['id']
+                st.rerun()
+        
+        with button_col2:
+            if st.button("Delete", key=f"delete_{row['id']}"):
+                delete_match(row['id'])
+                st.rerun()
+
+        # Add a small divider line for spacing between matches
+        st.markdown("---")
 
 # Show the form to add a new match
 st.write("### Add New Match")
@@ -140,10 +158,13 @@ with st.form(key='add_match_form'):
     new_match_date = st.date_input('Match Date')
     new_google_maps_link = st.text_input('Google Maps Link')
     if st.form_submit_button('Add'):
-        if new_match_name.strip() and new_google_maps_link.strip():
-            add_match(new_match_name.strip(), new_match_date.strftime('%Y-%m-%d'), new_google_maps_link.strip())
-            st.rerun()
-
+            # Check only if the match name is provided
+            if new_match_name.strip():
+                add_match(new_match_name.strip(), new_match_date.strftime('%Y-%m-%d'), new_google_maps_link.strip())
+                st.rerun()
+            else:
+                st.error("Match name is required.")
+                
 # Show the edit form if a match ID is set
 if st.session_state.edit_match_id is not None:
     match_id = st.session_state.edit_match_id

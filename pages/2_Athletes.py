@@ -3,6 +3,20 @@ import sqlite3
 import pandas as pd
 import os
 
+# Ensure the user is authenticated
+if 'authenticated' not in st.session_state or not st.session_state.authenticated:
+    st.error("Please log in from the Home page.")
+    # Redirect to Home if not authenticated
+    st.markdown("""
+        <script>
+            window.location.href = "/";
+        </script>
+        """, unsafe_allow_html=True)
+    st.stop()
+
+
+# The rest of your existing code for the "Next Match" page
+
 # Database initialization
 def init_db():
     try:
@@ -109,27 +123,34 @@ athletes_df = fetch_athletes()
 # Display the list of athletes in a tabular format
 st.write("### Athlete List")
 
-# Add headers for the columns
-col1, col2, col3, col4 = st.columns([3, 2, 2, 2])
-col1.write("**Name**")
-col2.write("**Contact**")
+# # Add headers for the columns
+# col1, col2, col3, col4 = st.columns([3, 2, 2, 2])
+# col1.write("**Name**")
+# col2.write("**Contact**")
 
 # Display each athlete's data in the columns
 for index, row in athletes_df.iterrows():
-    col1, col2, col3, col4 = st.columns([3, 2, 2, 2])
-    with col1:
-        st.write(row['name'])
-    with col2:
-        st.write(row['contact'])
-    with col3:
-        if st.button("Edit", key=f"edit_{row['id']}"):
-            st.session_state.edit_id = row['id']
-            st.rerun()
-    with col4:
-        if st.button("Delete", key=f"delete_{row['id']}"):
-            delete_athlete(row['id'])
-            st.success(f"Athlete '{row['name']}' deleted successfully!")
-            st.rerun()
+    # Main container for each athlete
+    with st.container():
+        # Combine athlete's name and contact information in one line
+        st.write(f"**{row['name']}** ({row['contact']})")
+
+        # Create columns for the buttons, adjusting the width
+        button_col1, button_col2, space_col3 = st.columns([1,1,8])
+        
+        with button_col1:
+            if st.button("Edit", key=f"edit_{row['id']}"):
+                st.session_state.edit_id = row['id']
+                st.rerun()
+        
+        with button_col2:
+            if st.button("Del", key=f"delete_{row['id']}"):
+                delete_athlete(row['id'])
+                st.success(f"Athlete '{row['name']}' deleted successfully!")
+                st.rerun()        
+        with space_col3:
+            pass
+
 
 st.markdown("---")
 

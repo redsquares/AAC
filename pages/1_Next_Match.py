@@ -56,30 +56,16 @@ def init_db():
     except sqlite3.Error as e:
         st.error(f"An error occurred while initializing the database: {e}")
 
-# Authentication function
-# Authentication function
-def authenticate():
-
-    # Display the logo on the top of the page
-    st.image("logo_aac.png", width=100)
-
-    if 'authenticated' not in st.session_state:
-        st.session_state.authenticated = False
-
-    if not st.session_state.authenticated:
-        with st.form(key='login_form'):
-            password = st.text_input('Enter Password:', type='password')
-            login_button = st.form_submit_button('Login')
-            
-            if login_button:  # Trigger when form is submitted
-                if password == 'aac':
-                    st.session_state.authenticated = True
-                    st.success('Successfully logged in!')
-                    st.rerun()
-                else:
-                    st.error('Incorrect password.')
-
-    return st.session_state.authenticated
+# Ensure the user is authenticated
+if 'authenticated' not in st.session_state or not st.session_state.authenticated:
+    st.error("Please log in from the Home page.")
+    # Redirect to Home if not authenticated
+    st.markdown("""
+        <script>
+            window.location.href = "/";
+        </script>
+        """, unsafe_allow_html=True)
+    st.stop()
 
 # Custom CSS for mobile-friendly adjustments
 st.markdown(
@@ -119,6 +105,11 @@ def add_car(match_id, driver, contact, seats):
             st.success(f"Car added successfully!")
     except sqlite3.Error as e:
         st.error(f"An error occurred while adding a car: {e}")
+
+
+# Display the logo on the top of the page
+st.image("logo_aac.png", width=100)
+
 
 # Function to update car information in the database
 def update_car(car_id, driver, contact, seats):
@@ -237,11 +228,6 @@ def fetch_available_athletes(match_id):
 
 # Initialize the database
 init_db()
-
-# Authentication
-if not authenticate():
-    st.stop()
-
 
 # State to hold the currently edited car ID
 if 'edit_car_id' not in st.session_state:
