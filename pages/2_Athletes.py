@@ -136,7 +136,7 @@ for index, row in athletes_df.iterrows():
         st.write(f"**{row['name']}** ({row['contact']})")
 
         # Create columns for the buttons, adjusting the width
-        button_col1, button_col2, space_col3 = st.columns([1,1,8])
+        button_col1, button_col2, space_col3 = st.columns([2,2,8])
         
         with button_col1:
             if st.button("Edit", key=f"edit_{row['id']}"):
