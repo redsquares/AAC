@@ -144,7 +144,7 @@ for index, row in athletes_df.iterrows():
                 st.rerun()
         
         with button_col2:
-            if st.button("Del", key=f"delete_{row['id']}"):
+            if st.button("Delete", key=f"delete_{row['id']}"):
                 delete_athlete(row['id'])
                 st.success(f"Athlete '{row['name']}' deleted successfully!")
                 st.rerun()        
