@@ -19,7 +19,7 @@ if 'selected_teams' not in st.session_state:
 def fetch_athletes():
     try:
         with sqlite3.connect('athletes.db') as conn:
-            return pd.read_sql_query("SELECT * FROM athletes", conn)
+            return pd.read_sql_query("SELECT * FROM athletes ORDER BY name ASC", conn)
     except sqlite3.Error as e:
         st.error(f"An error occurred while fetching athletes: {e}")
         return pd.DataFrame()  # Return an empty DataFrame if there's an error
