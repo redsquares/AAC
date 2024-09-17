@@ -8,6 +8,7 @@ if 'authenticated' not in st.session_state or not st.session_state.authenticated
     st.error("Por favor, faça login a partir da página inicial.")
     st.stop()
 
+
 # Function to fetch all past matches from the database
 def fetch_past_matches():
     try:
